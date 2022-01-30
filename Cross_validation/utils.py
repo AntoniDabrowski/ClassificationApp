@@ -15,7 +15,6 @@ def cross_validation(x: pd.DataFrame, y: pd.DataFrame, root, pb, classifier: Abs
 
     for train_index, test_index in kf.split(x):
         pb['value'] += 100 / (total * folds)
-        print(pb['value'])
         txt['text'] = task_name + ' ' + str(np.round(pb['value'])) + '%'
         root.update_idletasks()
         classifier_instance = classifier()

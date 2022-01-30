@@ -13,18 +13,23 @@ import itertools
 import warnings
 
 
-def classification(train_path, test_path, pred_path, dict_algorithms, root, pb, txt, mode):
+def classification(train_path, test_path, pred_path, dict_algorithms, root, pb, txt, mode, target):
     train = pd.read_csv(train_path)
     test = pd.read_csv(test_path)
-    train_x = train.loc[:, train.columns != 'target']
-    train_y = train['target']
+    if target.isnumeric():
+        target = int(target)
+        assert target < len(train.columns)
+        target = train.columns[target]
+
+    assert target in train.columns
+    train_x = train.loc[:, train.columns != target]
+    train_y = train[target]
     list_of_algorithms = select_algorithms(dict_algorithms)
     errs = []
     upper_errs = []
     models = []
     test_encodings = []
     for algorithm, name in list_of_algorithms:
-        print(name)
         pb['value'] = 0
         txt['text'] = name + ' ' + str(np.round(pb['value'])) + '%'
         root.update_idletasks()
@@ -36,9 +41,9 @@ def classification(train_path, test_path, pred_path, dict_algorithms, root, pb, 
         test_encodings.append(test_encoding)
     best = np.argmin(upper_errs)
     best_model = models[best]
-    print(str(best_model))
-    print(errs[best])
-    print(upper_errs[best])
+    # print(str(best_model))
+    # print(errs[best])
+    # print(upper_errs[best])
     save_results(best_model, test_encodings[best], pred_path)
 
 
@@ -61,10 +66,14 @@ def knn(train_x, train_y, test, root, pb, task_name, txt, mode):
 
     folds = 10
     if not mode:
-        chosen = np.random.choice(list(encoders.keys()),3,replace=False)
-        encoders = {key:encoders[key] for key in chosen}
-        distances = np.random.choice(distances,3,replace=False)
-        folds = 5
+        encoders = {"BackwardDifferenceEncoder": BackwardDifferenceEncoder,
+                    "BaseNEncoder": BaseNEncoder,
+                    "BinaryEncoder": BinaryEncoder,}
+        # chosen = np.random.choice(list(encoders.keys()),3,replace=False)
+        # encoders = {key:encoders[key] for key in chosen}
+        # distances = np.random.choice(distances,3,replace=False)
+        distances = distances[:3]
+        folds = 2
 
 
     upper_confidence_error = 1
@@ -108,7 +117,7 @@ def decision_tree(train_x, train_y, test, root, pb, task_name, txt, mode):
     criterions = ["infogain", "infogain_ratio", "mean_err_rate", "gini"]
     if not mode:
         criterions = ['infogain_ratio']
-        k = 5
+        k = 2
 
     total = len(criterions)
     for criterion in criterions:
@@ -130,15 +139,17 @@ def random_forest(train_x, train_y, test, root, pb, task_name, txt, mode):
     upper_confidence_error = 1
     mean_error_rate = 1
     best_classifier = None
+    trees_no = 25
     criterions = ["infogain", "infogain_ratio", "mean_err_rate", "gini"]
     if not mode:
         criterions = ['infogain_ratio']
-        k = 5
+        k = 2
+        trees_no = 10
     total = len(criterions)
     for criterion in criterions:
         classifier, result = cross_validation(train_x, train_y, root, pb, classifier=RandomForest, folds=k,
                                               criterion=criterion,
-                                              nattrs=1, trees_no=25, verbose=False, total=total, task_name=task_name,
+                                              nattrs=1, trees_no=trees_no, verbose=False, total=total, task_name=task_name,
                                               txt=txt)
         error_rate = result['err_rate']
         standard_deviation = result['standard_deviation']
@@ -166,8 +177,14 @@ def naive_bayes_classifier(train_x, train_y, test, root, pb, task_name, txt, mod
 
     folds = 10
     if not mode:
-        chosen = np.random.choice(list(encoders.keys()),3,replace=False)
-        encoders = {key:encoders[key] for key in chosen}
+        encoders = {"BackwardDifferenceEncoder": BackwardDifferenceEncoder,
+                    "BaseNEncoder": BaseNEncoder,
+                    "BinaryEncoder": BinaryEncoder,}
+        # chosen = np.random.choice(list(encoders.keys()),3,replace=False)
+        # encoders = {key:encoders[key] for key in chosen}
+        # distances = np.random.choice(distances,3,replace=False)
+        # chosen = np.random.choice(list(encoders.keys()),3,replace=False)
+        # encoders = {key:encoders[key] for key in chosen}
         folds = 5
 
     upper_confidence_error = 1
@@ -207,12 +224,3 @@ def select_algorithms(dict_algorithms):
     if dict_algorithms['Random Forest']:
         list_of_algorithms.append((random_forest,'Random Forest'))
     return list_of_algorithms
-
-
-if __name__ == '__main__':
-    train_path = r"C:/Users/user/Studia/Semestr V/Python/Projekt/Code/Example_dataset/train.csv"
-    test_path = r"C:/Users/user/Studia/Semestr V/Python/Projekt/Code/Example_dataset/test.csv"
-    pred_path = r"C:/Users/user/Studia/Semestr V/Python/Projekt/Code/Example_dataset"
-    dict_algorithms = {'K-nearest neighbors': 0, 'Naive Bayes Classifier': 1, 'Decision Tree': 0, 'Random Forest': 0}
-
-    classification(train_path, test_path, pred_path, dict_algorithms)

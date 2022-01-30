@@ -48,32 +48,3 @@ class RandomForest:
         bootstrap = train.iloc[train_idx]
         out_of_bag = train.iloc[oob_idx]
         return bootstrap, out_of_bag
-
-if __name__ == '__main__':
-    train = pd.read_csv('../../data/train.csv')
-    test = pd.read_csv('../../data/test.csv')
-
-    train.rename(columns={"Survived": "target"}, inplace=True)
-    train['Name'] = train['Name'].apply(lambda full_name: full_name.split(',')[0])
-    test['Name'] = test['Name'].apply(lambda full_name: full_name.split(',')[0])
-
-    train_x = train.iloc[:, 2:]
-    train_y = train.iloc[:, 1]
-    test = test.iloc[:, 1:]
-
-    # train, test = train_test_split(train, test_size=0.3)
-
-    RF = RandomForest()
-    RF.train(train_x, train_y, trees_no=30, criterion='infogain_ratio', nattrs=1)
-
-    results = RF.classify(test)
-
-    df = pd.DataFrame({'PassengerId': np.arange(892, 1310), 'Survived': results})
-
-    df.to_csv('..\Predictions\Random_Forest_2.csv', index=False)
-
-    # print('nattr = 2')
-    # RF.print_forest()
-    # print(f'Forest OOB error rate: {RF.get_forest_OOB_err() * 100:.3f}%')
-    # print(f'Mean trees error rate: {RF.mean_tree_errors()[0] * 100:.3f}%')
-    # print(f'Mean trees agreement: {RF.forest_mean_agreement() * 100:.3f}%')
