@@ -20,11 +20,9 @@ class Tree:
             df = df.copy()
             df['weight'] = np.ones(len(df))
 
-        # Technicality:
-        # We need to let subtrees know about all targets to properly color nodes
-        # We pass this in subtree arguments.
         if "all_targets" not in kwargs:
             kwargs["all_targets"] = sorted(df["target"].unique())
+
         # Save keyword arguments to build subtrees
         kwargs_orig = dict(kwargs)
 
@@ -32,7 +30,6 @@ class Tree:
         self.all_targets = kwargs.pop("all_targets")
 
         # Save debug info for visualization
-        # Debugging tip: contents of self.info are printed in tree visualizations!
         self.weights = calculate_weights(df)
         self.counts = df["target"].value_counts()
         self.info = {
@@ -47,7 +44,7 @@ class Tree:
 
     def get_target_distribution(self, sample):
         # Case: leaf
-        if self.split is None:  # or 'subtree' not in self.split.__dict__
+        if self.split is None:
             return self.weights
 
         subtree = self.split(sample)
@@ -64,8 +61,6 @@ class Tree:
         return pd.concat(sub_dfs).groupby(level=0).sum()
 
     def classify(self, sample):
-        # TODO: classify the sample by descending into the appropriate subtrees.
-        # Hint: you can also use self.get_target_distribution
         weights = self.get_target_distribution(sample)
         return weights.idxmax()
 
@@ -112,7 +107,6 @@ class Tree:
             for w in self.split.iter_subtrees():
                 w.prune_with_confidence_interval()
 
-        # N = self.info['num_samples']
         N = np.sum(self.weights)
         parent_error = self.weights / np.sum(self.weights)
         parent_error = sorted(list(parent_error), reverse=True)

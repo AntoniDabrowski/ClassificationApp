@@ -16,16 +16,12 @@ def get_split(df, criterion="infogain", nattrs=None):
         - If no split exists, return None.
         - If a split exists, return an instance of a subclass of AbstractSplit
     """
-    # Implement termination criteria:
-    # TermCrit1: Node is pure
+
     target_value_counts = df["target"].value_counts()
     if len(target_value_counts) == 1:
         return None
-    # TermCrit2: No split is possible
-    #    First get a list of attributes that can be split
-    #    (i.e. attribute is not target and atribute can take more than one value)
-    #
-    #    The list of attributes on which we can split will also be handy for building random trees.
+
+    # The list of attributes on which we can split will also be handy for building random trees.
     possible_splits = [c for c in df.columns if
                        c not in ['target', 'weight'] and np.sum(pd.isna(df[c].unique()) == False) > 1]
 
@@ -53,11 +49,6 @@ def get_split(df, criterion="infogain", nattrs=None):
 
     best_purity_gain = -1
     best_split = None
-
-    # Random Forest support
-    # restrict possible_splits to a few radomly selected attributes
-    # if nattrs is not None:
-    #     possible_splits = TODO
 
     for attr in possible_splits:
         if np.issubdtype(df[attr].dtype, np.number):
@@ -107,7 +98,7 @@ def get_numrical_split_and_purity(
 
     nans_weights = pd.concat([left_counts, calculate_weights(nans)]).groupby(level=0).sum()
 
-    best_split = None  # Will be None, or NumericalSplit(attr, best_threshold)
+    best_split = None
     best_purity_gain = -1
 
     w_1 = right_counts.sum()
@@ -119,8 +110,6 @@ def get_numrical_split_and_purity(
         # the purity of the slipt for all possible thresholds!
         # Return the best split found.
 
-        # Remember that the attribute may have duplicate values and all samples
-        # with the same attribute value must end in the same subtree!
         row = attr_df.iloc[row_i]
         next_row = attr_df.iloc[row_i + 1]
         attribute_value = row[attr]
@@ -131,15 +120,9 @@ def get_numrical_split_and_purity(
         w_1 -= row['weight']
         w_2 += row['weight']
 
-        # Consider the split at threshold, i.e. NumericalSplit(attr, split_threshold)
-
-        # the loop should return the best possible split.
-
-        # TODO: update left_counts and right_counts
         right_counts[row['target']] -= row['weight']
         left_counts[row['target']] += row['weight']
 
-        # The split is possible if attribute_value != next_attribute_value
         if attribute_value != next_attribute_value:
             mean_child_purity = w_2 * purity_fun(left_counts + (w_2 / total_weight) * nans_weights)
             mean_child_purity += w_1 * purity_fun(right_counts + (w_1 / total_weight) * nans_weights)
@@ -149,11 +132,6 @@ def get_numrical_split_and_purity(
             if purity_gain >= best_purity_gain:
                 best_purity_gain = purity_gain
                 best_split = NumericalSplit(attr, split_threshold)
-
-        # TODO: now consider the split at split_threshold and save it if it the best one
-
-    # if normalize_by_split_entropy:
-    #     best_purity_gain /= entropy(df[attr].value_counts())
 
     return best_split, best_purity_gain
 
@@ -192,7 +170,6 @@ def get_categorical_split_and_purity(
 
     mean_child_purity = np.sum(purity) / df['weight'].sum()
 
-    # Note: when purity is measured by entropy, this corresponds to Mutual Information
     purity_gain = parent_purity - mean_child_purity
     if normalize_by_split_entropy:
         purity_gain /= entropy(np.array([g_df['weight'].sum() for val, g_df in df.groupby(attr)]))
