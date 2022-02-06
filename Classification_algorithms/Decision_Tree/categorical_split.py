@@ -7,6 +7,8 @@ class CategoricalMultivalueSplit(AbstractSplit):
     def build_subtrees(self, df, subtree_kwargs):
         self.subtrees = {}
         nans = df.copy()[df[self.attr].isna()]
+        # For each subset extended by weighted set of data with missing values it creates
+        # a subtree.
         for group_name, group_df in df.groupby(self.attr):
             if not pd.isna(group_name):
                 if nans.empty:

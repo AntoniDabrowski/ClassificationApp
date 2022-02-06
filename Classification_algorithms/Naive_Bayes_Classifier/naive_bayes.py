@@ -13,6 +13,7 @@ class NaiveBayesClassifier(AbstractClassifier):
         return "Naive Bayes Classifier"
 
     def train(self, train_x: pd.DataFrame, train_y: pd.Series, threshold=1, **kwargs):
+        # Calculate probabilities of occurrence particular class based on particular observation
         super().train(train_x, train_y)
 
         self.prob_of_survival = train_y.mean()
@@ -26,6 +27,8 @@ class NaiveBayesClassifier(AbstractClassifier):
             self.probabilities[name] = {key: np.mean(d[key]) for key in d.keys() if len(d[key]) >= threshold}
 
     def classify(self, test: pd.DataFrame, **kwargs):
+        # Uses assumption that there is no correlation between attributes in dataset and then compute
+        # probability of membership in particular class
         predictions = []
         for _, row in test.iterrows():
             naive_part_survived = [np.log(self.probabilities[row_name].get(row_value, 0.5) + 1e-100) for

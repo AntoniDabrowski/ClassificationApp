@@ -14,8 +14,15 @@ import warnings
 
 
 def classification(train_path, test_path, pred_path, dict_algorithms, root, pb, txt, mode, target):
+    """
+        Method used directly in UI for choosing best classification algorithm for provided dataset.
+    """
+
+    # Import data
     train = pd.read_csv(train_path)
     test = pd.read_csv(test_path)
+
+    # Checks which column is a target column
     if target.isnumeric():
         target = int(target)
         assert target < len(train.columns)
@@ -24,11 +31,16 @@ def classification(train_path, test_path, pred_path, dict_algorithms, root, pb, 
     assert target in train.columns
     train_x = train.loc[:, train.columns != target]
     train_y = train[target]
+
+    # Import all selected algorithms
     list_of_algorithms = select_algorithms(dict_algorithms)
+
     errs = []
     upper_errs = []
     models = []
     test_encodings = []
+
+    # Check performance of each classifier
     for algorithm, name in list_of_algorithms:
         pb['value'] = 0
         txt['text'] = name + ' ' + str(np.round(pb['value'])) + '%'
@@ -44,10 +56,13 @@ def classification(train_path, test_path, pred_path, dict_algorithms, root, pb, 
     # print(str(best_model))
     # print(errs[best])
     # print(upper_errs[best])
+
+    # Saves results for a best model
     save_results(best_model, test_encodings[best], pred_path)
 
 
 def knn(train_x, train_y, test, root, pb, task_name, txt, mode):
+    # performs classification for each combination of data encoders and distance functions
     encoders = {
         "BackwardDifferenceEncoder": BackwardDifferenceEncoder,
         "BaseNEncoder": BaseNEncoder,
@@ -68,13 +83,12 @@ def knn(train_x, train_y, test, root, pb, task_name, txt, mode):
     if not mode:
         encoders = {"BackwardDifferenceEncoder": BackwardDifferenceEncoder,
                     "BaseNEncoder": BaseNEncoder,
-                    "BinaryEncoder": BinaryEncoder,}
+                    "BinaryEncoder": BinaryEncoder, }
         # chosen = np.random.choice(list(encoders.keys()),3,replace=False)
         # encoders = {key:encoders[key] for key in chosen}
         # distances = np.random.choice(distances,3,replace=False)
         distances = distances[:3]
         folds = 2
-
 
     upper_confidence_error = 1
     mean_error_rate = 1
@@ -107,6 +121,7 @@ def knn(train_x, train_y, test, root, pb, task_name, txt, mode):
 
 
 def decision_tree(train_x, train_y, test, root, pb, task_name, txt, mode):
+    # Checks which parameters for decision tree are best by performing cross validation
     # return mean_error, upper_confidence_bound
     k = 10
 
@@ -149,7 +164,8 @@ def random_forest(train_x, train_y, test, root, pb, task_name, txt, mode):
     for criterion in criterions:
         classifier, result = cross_validation(train_x, train_y, root, pb, classifier=RandomForest, folds=k,
                                               criterion=criterion,
-                                              nattrs=1, trees_no=trees_no, verbose=False, total=total, task_name=task_name,
+                                              nattrs=1, trees_no=trees_no, verbose=False, total=total,
+                                              task_name=task_name,
                                               txt=txt)
         error_rate = result['err_rate']
         standard_deviation = result['standard_deviation']
@@ -179,7 +195,7 @@ def naive_bayes_classifier(train_x, train_y, test, root, pb, task_name, txt, mod
     if not mode:
         encoders = {"BackwardDifferenceEncoder": BackwardDifferenceEncoder,
                     "BaseNEncoder": BaseNEncoder,
-                    "BinaryEncoder": BinaryEncoder,}
+                    "BinaryEncoder": BinaryEncoder, }
         # chosen = np.random.choice(list(encoders.keys()),3,replace=False)
         # encoders = {key:encoders[key] for key in chosen}
         # distances = np.random.choice(distances,3,replace=False)
@@ -216,11 +232,11 @@ def naive_bayes_classifier(train_x, train_y, test, root, pb, task_name, txt, mod
 def select_algorithms(dict_algorithms):
     list_of_algorithms = []
     if dict_algorithms['K-nearest neighbors']:
-        list_of_algorithms.append((knn,'K-nearest neighbors'))
+        list_of_algorithms.append((knn, 'K-nearest neighbors'))
     if dict_algorithms['Naive Bayes Classifier']:
-        list_of_algorithms.append((naive_bayes_classifier,'Naive Bayes Classifier'))
+        list_of_algorithms.append((naive_bayes_classifier, 'Naive Bayes Classifier'))
     if dict_algorithms['Decision Tree']:
-        list_of_algorithms.append((decision_tree,'Decision Tree'))
+        list_of_algorithms.append((decision_tree, 'Decision Tree'))
     if dict_algorithms['Random Forest']:
-        list_of_algorithms.append((random_forest,'Random Forest'))
+        list_of_algorithms.append((random_forest, 'Random Forest'))
     return list_of_algorithms

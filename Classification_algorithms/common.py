@@ -2,6 +2,9 @@ import pandas as pd
 
 
 class AbstractClassifier:
+    """
+        Abstract class that joins all classifiers and unify its methods
+    """
 
     def __init__(self):
         self.train_x = None

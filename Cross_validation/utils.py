@@ -8,6 +8,12 @@ from Classification_algorithms.common import AbstractClassifier
 
 def cross_validation(x: pd.DataFrame, y: pd.DataFrame, root, pb, classifier: AbstractClassifier, folds, task_name, txt,
                      **kwargs):
+    """
+        Cross validation is a method that enable measuring performance of algorithms. In this case I am using
+        method called 'K-folds'. I am splitting dataset into K chunks. Then K times I train current classifi-
+        cation algorithm on K-1 chunks and use one for testing. This method provides me K error rates which
+        later I can use for checking standard deviation of a error.
+    """
     kf = KFold(n_splits=folds)
     err_rate_list = []
 

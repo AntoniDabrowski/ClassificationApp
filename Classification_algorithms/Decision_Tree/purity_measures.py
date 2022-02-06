@@ -1,6 +1,8 @@
 import numpy as np
 
 
+# There are many ways to compute a node purity, those are three chosen for this implementation
+
 def entropy(counts):
     s = sum(counts)
     counts = counts / s

@@ -6,27 +6,60 @@ import graphviz
 import pandas as pd
 
 
+class DecisionTree(AbstractClassifier):
+    """
+    Auxiliary class that creates a Tree instance and performs on it training and classification
+    in a similar way to other classifiers.
+    """
+
+    def __init__(self):
+        super().__init__()
+        self.tree = None
+
+    def __str__(self):
+        return "Decision Tree"
+
+    def train(self, train_x: pd.DataFrame, train_y: pd.Series, criterion='infogain_ratio', **kwargs):
+        train = train_x.copy()
+        train['target'] = train_y
+        tree = Tree(train, criterion=criterion)
+        if kwargs.get('prune', True):
+            tree.prune_with_confidence_interval()
+        self.tree = tree
+
+    def classify(self, test: pd.DataFrame, **kwargs):
+        return np.array([self.tree.classify(test.iloc[i]) for i in range(len(test))])
+
+
 class Tree:
+    """
+    Class that represents a single decision tree
+    """
+
     def __init__(self, df, root=True, **kwargs):
         super().__init__()
+
+        # Data can not have missing target values
         assert not df['target'].isnull().values.any()
 
         """
             initially all data points are equally weighted however when missing 
-            value occures the data point will be distributed to subnodes with
+            value occurs the data point will be distributed to subnodes with
             decreased weight (proportional to size of node)
         """
         if root:
+            # Weights initialization
             df = df.copy()
             df['weight'] = np.ones(len(df))
 
+        # Collecting data for visualization
         if "all_targets" not in kwargs:
             kwargs["all_targets"] = sorted(df["target"].unique())
 
         # Save keyword arguments to build subtrees
         kwargs_orig = dict(kwargs)
 
-        # Get kwargs we know about, remaning ones will be used for splitting
+        # Get kwargs we know about, remaining ones will be used for splitting
         self.all_targets = kwargs.pop("all_targets")
 
         # Save debug info for visualization
@@ -38,7 +71,11 @@ class Tree:
             "gini": gini(self.weights),
         }
 
+        # if Tree contain data-samples of only one type there is no need for further splitting and following method
+        # will return None. Otherwise it will return criterion that will partition data-samples into subtrees, hope-
+        # fully purer than parent.
         self.split = get_split(df, **kwargs)
+
         if self.split:
             self.split.build_subtrees(df, kwargs_orig)
 
@@ -103,6 +140,12 @@ class Tree:
                / (1 + (z ** 2) / N)
 
     def prune_with_confidence_interval(self):
+        """
+            Prunning is a method that after creating a tree is checking whether it is not overfitted.
+            Specifically it is checking if a leafs has higher upper confidence bound for a good pre-
+            diction than its parents. If not, there is no need for that leaf. It is prunned and same
+            process is considered on its father (new leaf)
+        """
         if self.split:
             for w in self.split.iter_subtrees():
                 w.prune_with_confidence_interval()
@@ -123,23 +166,3 @@ class Tree:
             if children_error > parent_error:
                 self.split = None
                 self.info['splitted'] = True
-
-
-class DecisionTree(AbstractClassifier):
-    def __init__(self):
-        super().__init__()
-        self.tree = None
-
-    def __str__(self):
-        return "Decision Tree"
-
-    def train(self, train_x: pd.DataFrame, train_y: pd.Series, criterion='infogain_ratio', **kwargs):
-        train = train_x.copy()
-        train['target'] = train_y
-        tree = Tree(train, criterion=criterion)
-        if kwargs.get('prune', True):
-            tree.prune_with_confidence_interval()
-        self.tree = tree
-
-    def classify(self, test: pd.DataFrame, **kwargs):
-        return np.array([self.tree.classify(test.iloc[i]) for i in range(len(test))])

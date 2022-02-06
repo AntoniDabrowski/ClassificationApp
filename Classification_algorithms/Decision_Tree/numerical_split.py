@@ -6,9 +6,12 @@ import pandas as pd
 class NumericalSplit(AbstractSplit):
     def __init__(self, attr, th):
         super(NumericalSplit, self).__init__(attr)
-        self.th = th
+        self.th = th  # threshold
 
     def build_subtrees(self, df, subtree_kwargs):
+        # Numerical split always built two subtrees - with values lower than threshold and bigger
+        # data-points with missing values (nans) will be distributed to each class with weights
+        # proportional to size of a class
         nans = df.copy()[df[self.attr].isna()]
         lower_df = df[df[self.attr] <= self.th]
         upper_df = df[df[self.attr] > self.th]
@@ -24,7 +27,10 @@ class NumericalSplit(AbstractSplit):
             upper_df = pd.concat([upper_df, nans])
             nans['weight'] = nans['weight'].apply(lambda x: x / w_u)
 
-        # # Different approach:
+        # Other approach says that it's reasonable to fill missing values with a average of other values
+        # and then place them into one of two subsets. However this assumption is loosing more information
+        # than mine.
+
         # if df[self.attr].mean() <= self.th:
         #     lower_df = pd.concat([lower_df,nans])
         # else:

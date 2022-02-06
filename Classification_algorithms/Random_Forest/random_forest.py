@@ -3,9 +3,17 @@ import numpy as np
 from tqdm.autonotebook import tqdm
 import scipy.stats as sstats
 from Classification_algorithms.Decision_Tree.decision_tree import Tree
+from Classification_algorithms.common import AbstractClassifier
 
 
-class RandomForest:
+class RandomForest(AbstractClassifier):
+    """
+        Classification algorithm that creates many partially random decision trees
+        that connected to one 'majority vote classifier' gives very accurate predictions.
+        Advantage of this approach is that I can check confidence of a prediction based on
+        number of trees that 'voted' for particular option.
+    """
+
     def __init__(self):
         self.forest = []
 
@@ -15,8 +23,8 @@ class RandomForest:
     def train(self, train_x: pd.DataFrame, train_y: pd.Series, **kwargs):
         train = train_x.copy()
         train['target'] = train_y
-        if kwargs.get('verbose',False):
-            iterate_trees = tqdm(range(kwargs.get('trees_no', 30)), position=0,leave=False)
+        if kwargs.get('verbose', False):
+            iterate_trees = tqdm(range(kwargs.get('trees_no', 30)), position=0, leave=False)
         else:
             iterate_trees = range(kwargs.get('trees_no', 30))
         for _ in iterate_trees:
@@ -36,10 +44,12 @@ class RandomForest:
 
     def create_tree(self, train: pd.DataFrame, **kwargs):
         bootstrap, out_of_bag = self.bootstrap_data(train)
-        tree = Tree(bootstrap, criterion=kwargs.get('criterion', 'infogain_ratio'), nattrs=kwargs.get('nattrs',1))
+        tree = Tree(bootstrap, criterion=kwargs.get('criterion', 'infogain_ratio'), nattrs=kwargs.get('nattrs', 1))
         return tree, out_of_bag
 
     def bootstrap_data(self, train: pd.DataFrame):
+        # One way of providing diversity between trees is to make each based on partially different datasets
+        # It is what bootstrap method provides.
         N = len(train)
         train_idx = np.random.randint(0, N - 1, size=(N,))
         oob_idx = np.ones((N,), dtype=bool)
